@@ -28,41 +28,31 @@ import io.netty.handler.codec.http.websocketx.*;
 import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketClientCompressionHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import io.netty.handler.ssl.util.SimpleTrustManagerFactory;
-import io.netty.util.CharsetUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.KeyStore;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public final class WebSocketClient implements Closeable {
-    private static Log logger = LogFactory.getLog(WebSocketClient.class);
     static final String URL = System.getProperty("url", "wss://vtcc.ai/voice/api/asr/v1/ws/decode_online?content-type=audio/x-raw,+layout=(string)interleaved,+rate=(int)16000,+format=(string)S16LE,+channels=(int)1&token=anonymous");
+    private static Log logger = LogFactory.getLog(WebSocketClient.class);
     private Channel channel;
     private String url;
     private EventLoopGroup executors = new NioEventLoopGroup();
+
     public WebSocketClient(String url) throws Exception {
         this.url = url;
         start();
     }
 
 
-    public void start() throws Exception{
+    public void start() throws Exception {
         URI uri = new URI(url);
-        System.out.println(uri.getQuery());
-        String scheme = uri.getScheme() == null? "ws" : uri.getScheme();
-        final String host = uri.getHost() == null? "127.0.0.1" : uri.getHost();
+        String scheme = uri.getScheme() == null ? "ws" : uri.getScheme();
+        final String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
         final int port;
         if (uri.getPort() == -1) {
             if ("ws".equalsIgnoreCase(scheme)) {
@@ -90,58 +80,84 @@ public final class WebSocketClient implements Closeable {
         } else {
             sslCtx = null;
         }
-            // Connect with V13 (RFC 6455 aka HyBi-17). You can change it to V08 or V00.
-            // If you change it to V00, ping is not supported and remember to change
-            // HttpResponseDecoder to WebSocketHttpResponseDecoder in the pipeline.
-            final WebSocketClientHandler handler =
-                    new WebSocketClientHandler(
-                            WebSocketClientHandshakerFactory.newHandshaker(
-                                    uri, WebSocketVersion.V13, null, true, new DefaultHttpHeaders()));
+        // Connect with V13 (RFC 6455 aka HyBi-17). You can change it to V08 or V00.
+        // If you change it to V00, ping is not supported and remember to change
+        // HttpResponseDecoder to WebSocketHttpResponseDecoder in the pipeline.
+        final WsHandshakeHandler handler =
+                new WsHandshakeHandler(
+                        WebSocketClientHandshakerFactory.newHandshaker(
+                                uri, WebSocketVersion.V13, null, true, new DefaultHttpHeaders()));
 
-            Bootstrap b = new Bootstrap();
-            b.group(executors)
-                    .channel(NioSocketChannel.class)
-                    .handler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        protected void initChannel(SocketChannel ch) {
-                            ChannelPipeline p = ch.pipeline();
-                            if (sslCtx != null) {
-                                p.addLast(sslCtx.newHandler(ch.alloc(), host, port));
-                            }
-                            p.addLast(
-                                    new HttpClientCodec(),
-                                    new HttpObjectAggregator(8192),
-                                    WebSocketClientCompressionHandler.INSTANCE, handler);
+        Bootstrap b = new Bootstrap();
+        b.group(executors)
+                .channel(NioSocketChannel.class)
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+                        ChannelPipeline p = ch.pipeline();
+                        if (sslCtx != null) {
+                            p.addLast(sslCtx.newHandler(ch.alloc(), host, port));
                         }
-                    });
-            this.channel = b.connect(uri.getHost(), port).sync().channel();
-            handler.handshakeFuture().sync();
+                        p.addLast(
+                                new HttpClientCodec(),
+                                new HttpObjectAggregator(8192),
+                                WebSocketClientCompressionHandler.INSTANCE, handler);
+                    }
+                });
+        this.channel = b.connect(uri.getHost(), port).sync().channel();
+        handler.handshakeFuture().sync();
     }
-    public ChannelFuture sendBinaryMessage(byte[] data, int offset, int length){
+
+    public ChannelFuture sendBinaryMessage(byte[] data, int offset, int length) {
         return channel.writeAndFlush(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(data, offset, length)));
     }
 
-    public ChannelFuture sendBinaryMessage(byte[] data){
+    public ChannelFuture sendBinaryMessage(byte[] data) {
         return channel.writeAndFlush(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(data)));
     }
 
-    public void close(){
-        channel.close();
+    public void close() {
         executors.shutdownGracefully();
     }
-    public static void main(String[] args) throws Exception {
-        try(
-                WebSocketClient client = new WebSocketClient(URL);
-                BufferedInputStream bi = new BufferedInputStream(Files.newInputStream(Paths.get("src/main/resources/test_audio.wav")))
-        ) {
-            logger.info("got websocket client");
-            byte[] bytes = new byte[8000];
-            int nread;
-            while ((nread = bi.read(bytes)) != -1) {
-                client.sendBinaryMessage(bytes, 0, nread);
-                TimeUnit.MILLISECONDS.sleep(250);
+
+    public void shutdownNow() {
+        channel.close();
+        executors.shutdownNow();
+    }
+
+    public <T> void addHandler(IResponseHandler<T> wsHandler) {
+        SimpleChannelInboundHandler<T> handler = new SimpleChannelInboundHandler<T>() {
+            boolean isCompleteCalled = false;
+
+            @Override
+            protected void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
+                if (msg instanceof TextWebSocketFrame)
+                    wsHandler.onMessage(msg);
+                else if (msg instanceof CloseWebSocketFrame) {
+                    if (!isCompleteCalled) {
+                        wsHandler.onComplete();
+                        isCompleteCalled = true;
+                    }
+                    ctx.channel().close();
+                    ctx.executor().shutdownGracefully();
+                }
             }
-            client.sendBinaryMessage("EOS".getBytes(CharsetUtil.UTF_8));
-        }
+
+            @Override
+            public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+                wsHandler.onFailure(cause);
+                ctx.close();
+                ctx.executor().shutdownGracefully();
+            }
+
+            @Override
+            public void channelInactive(ChannelHandlerContext ctx) {
+                if (!isCompleteCalled) {
+                    wsHandler.onComplete();
+                    isCompleteCalled = true;
+                }
+            }
+        };
+        this.channel.pipeline().addLast(handler);
     }
 }
