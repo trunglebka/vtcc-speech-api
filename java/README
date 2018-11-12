@@ -1,0 +1,2 @@
+Example nhận dạng file offline:
+    java/src/main/java/speech/asr/rest/AudioFileRecognizer.java
