@@ -21,7 +21,7 @@ public class AsrWebSocketClient {
     private int channels;
     private String token;
     private IResponseHandler wsHandler;
-
+    private String model;
     private AsrWebSocketClient(Builder builder){
         sampleRate = builder.sampleRate;
         audioFormat = builder.audioFormat;
@@ -30,6 +30,7 @@ public class AsrWebSocketClient {
         url = builder.url;
         Objects.requireNonNull(builder.wsHandler);
         wsHandler = builder.wsHandler;
+        this.model = builder.model;
     }
 
     public static Builder newBuilder() {
@@ -43,6 +44,8 @@ public class AsrWebSocketClient {
                 .append(",+channels=(int)").append(channels);
         if (this.token != null)
             sb.append("&token=").append(this.token);
+        if (this.model!=null && !this.model.trim().equals(""))
+            sb.append("&model=").append(this.model);
         return sb.toString();
     }
 
@@ -74,7 +77,7 @@ public class AsrWebSocketClient {
         private String token;
         private String url = "wss://vtcc.ai/voice/api/asr/v1/ws/decode_online";
         private IResponseHandler wsHandler;
-
+        private String model;
         private Builder() {
         }
 
@@ -83,10 +86,16 @@ public class AsrWebSocketClient {
             return this;
         }
 
+        public Builder setModel(String val) {
+            model = val;
+            return this;
+        }
+
         public Builder setAudioFormat(PCMFormat val) {
             audioFormat = val;
             return this;
         }
+
 
         public Builder setChannels(int val) {
             channels = val;
@@ -110,36 +119,6 @@ public class AsrWebSocketClient {
 
         public AsrWebSocketClient build() throws Exception {
             return new AsrWebSocketClient(this);
-        }
-    }
-
-    public static void main(String[] args) throws Exception {
-        IResponseHandler<WebSocketFrame> handler = new IResponseHandler<WebSocketFrame>() {
-            @Override
-            public void onMessage(WebSocketFrame frame) {
-                if (frame instanceof TextWebSocketFrame) {
-                    TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
-                    System.out.println(textFrame.text());
-                } else
-                    System.out.println(frame);
-            }
-
-            @Override
-            public void onFailure(Throwable cause) {
-                cause.printStackTrace();
-            }
-
-            @Override
-            public void onComplete() {
-                System.err.println("completed");
-            }
-        };
-        try (
-                BufferedInputStream bi = new BufferedInputStream(Files.newInputStream(Paths.get("src/main/resources/test_audio.wav")))
-        ) {
-            AsrWebSocketClient client = AsrWebSocketClient.newBuilder().setSampleRate(16000)
-                    .setAudioFormat(PCMFormat.S16LE).setChannels(1).setHandler(handler).build();
-            client.recognize(bi);
         }
     }
 
