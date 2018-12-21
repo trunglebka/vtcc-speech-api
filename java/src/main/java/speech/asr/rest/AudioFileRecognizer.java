@@ -30,14 +30,8 @@ public class AudioFileRecognizer {
         }};
     }
 
-    public static void main(String[] args) throws Exception {
-        AudioFileRecognizer audioFileRecognizer = new AudioFileRecognizer(new File("/home/trungle/Downloads/sound.wav"));
-        //add your token here
-        //audioFileRecognizer.addToken("");
-        System.out.println(audioFileRecognizer.recognize());
-    }
 
-    public void addToken(String token) {
+    public void setToken(String token) {
         if (token == null)
             return;
         if (headers == null) {
@@ -47,6 +41,14 @@ public class AudioFileRecognizer {
     }
 
     public String recognize() throws Exception {
-        return HttpMultipartUploader.uploadFile(this.API_URL, FIELD_NAME, this.fileToRecognize, headers, uriParams);
+        return HttpMultipartUploader.uploadFile(API_URL, FIELD_NAME, this.fileToRecognize, uriParams, headers);
+    }
+
+
+    public static void main(String[] args) throws Exception {
+        AudioFileRecognizer audioFileRecognizer = new AudioFileRecognizer(new File("src/main/resources/test_audio.wav"));
+        //add your token here
+        //audioFileRecognizer.setToken("");
+        System.out.println(audioFileRecognizer.recognize());
     }
 }

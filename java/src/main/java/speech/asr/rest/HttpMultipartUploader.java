@@ -71,8 +71,4 @@ public class HttpMultipartUploader {
         return sb.toString();
     }
 
-    public static void main(String[] args) throws Exception {
-        String response = uploadFile("https://vtcc.ai/voice/api/asr/v1/rest/decode_file", "file", new File("/home/trungle/Downloads/sound.wav"), null, null);
-        System.out.println(response);
-    }
 }
