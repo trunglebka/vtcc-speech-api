@@ -9,7 +9,7 @@ from pathlib import Path
 url = "https://vtcc.ai/voice/api/tts/v1/rest/syn"
 #edit text field as your need
 data = {"text": "Đây là chương trình demo tổng hợp tiếng nói của trung tâm không gian mạng", "voice": "doanngocle", "id": "2", "without_filter": False, "speed": 1.0,
-        "tts_return_option": 2, "timeout": 60000, "addition_params": [{ "key": "", "value": ""}]}
+        "tts_return_option": 2}
 #add your token to authenticate
 headers = {'Content-type': 'application/json', 'token': ''}
 s = requests.Session()
