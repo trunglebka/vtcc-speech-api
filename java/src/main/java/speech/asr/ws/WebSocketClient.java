@@ -37,7 +37,7 @@ import java.net.URI;
 import java.security.KeyStore;
 
 public final class WebSocketClient implements Closeable {
-    static final String URL = System.getProperty("url", "wss://vtcc.ai/voice/api/asr/v1/ws/decode_online?content-type=audio/x-raw,+layout=(string)interleaved,+rate=(int)16000,+format=(string)S16LE,+channels=(int)1&token=anonymous");
+    static final String URL = System.getProperty("url", "wss://viettelgroup.ai/voice/api/asr/v1/ws/decode_online?content-type=audio/x-raw,+layout=(string)interleaved,+rate=(int)16000,+format=(string)S16LE,+channels=(int)1&token=anonymous");
     private static Log logger = LogFactory.getLog(WebSocketClient.class);
     private Channel channel;
     private String url;

@@ -6,7 +6,7 @@ from pathlib import Path
 import os.path
 
 dirname = os.path.dirname(__file__)
-url = "https://vtcc.ai/voice/api/asr/v1/rest/decode_file"
+url = "https://viettelgroup.ai/voice/api/asr/v1/rest/decode_file"
 headers = {
     'token': 'anonymous',
     #'sample_rate': 16000,

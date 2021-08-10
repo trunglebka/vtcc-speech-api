@@ -6,7 +6,7 @@ import requests
 import os.path
 from pathlib import Path
 
-url = "https://vtcc.ai/voice/api/tts/v1/rest/syn"
+url = "https://viettelgroup.ai/voice/api/tts/v1/rest/syn"
 #edit text field as your need
 data = {"text": "Đây là chương trình demo tổng hợp tiếng nói của trung tâm không gian mạng", "voice": "doanngocle", "id": "2", "without_filter": False, "speed": 1.0,
         "tts_return_option": 2}

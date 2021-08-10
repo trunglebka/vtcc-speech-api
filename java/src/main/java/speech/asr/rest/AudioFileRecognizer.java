@@ -6,7 +6,7 @@ import java.util.Map;
 
 public class AudioFileRecognizer {
     private static final String FIELD_NAME = "file";
-    private static final String API_URL = "https://vtcc.ai/voice/api/asr/v1/rest/decode_file";
+    private static final String API_URL = "https://viettelgroup.ai/voice/api/asr/v1/rest/decode_file";
     private Map<String, String> headers = null;
     private Map<String, String> uriParams = null;
     private File fileToRecognize;

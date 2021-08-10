@@ -75,7 +75,7 @@ public class AsrWebSocketClient {
         private PCMFormat audioFormat;
         private int channels;
         private String token;
-        private String url = "wss://vtcc.ai/voice/api/asr/v1/ws/decode_online";
+        private String url = "wss://viettelgroup.ai/voice/api/asr/v1/ws/decode_online";
         private IResponseHandler wsHandler;
         private String model;
         private Builder() {

@@ -65,7 +65,7 @@ def on_close(ws):
 
 class AsrWebSocket:
     def __init__(self, sample_rate=16000, audio_format='S16LE', channels=1, token='anonymous',
-                 url='wss://vtcc.ai/voice/api/asr/v1/ws/decode_online'):
+                 url='wss://viettelgroup.ai/voice/api/asr/v1/ws/decode_online'):
         self.sample_rate = sample_rate
         self.format = audio_format
         self.channels = channels
